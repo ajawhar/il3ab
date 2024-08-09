@@ -23,6 +23,11 @@
   "web_accessible_resources": [
     "iframe.html"
   ],
+   "icons": {
+    "16": "icons/bolt_16dp_EAC452.png",
+    "48": "icons/bolt_48dp_EAC452.png",
+    "128": "icons/bolt_128dp_EAC452.png"
+  },
   "commands": {
     "toggle-iframe": {
       "suggested_key": {
