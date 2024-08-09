@@ -12,32 +12,47 @@
       height: 100%;
       width: 100%;
       display: flex;
+      justify-content: center;
+      align-items: center;
       background-color: rgba(0, 0, 0, 0.5); /* Set background to slightly transparent black */
-      color: white; /* Ensure text is visible on black background */
+      color: white;
+      box-sizing: border-box;
+    }
+    .container {
+      width: 100%;
+      height: 100%;
+      padding: 10px; /* Padding inside the container */
+      box-sizing: border-box;
+      background-color: rgba(0, 0, 0, 0.6); /* Slightly transparent inner background */
+      border-radius: 15px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
     textarea {
-      border: none; /* Remove the border to make it seamless */
+      border: none;
       box-sizing: border-box;
-      color: white; /* Text color for the textarea */
+      color: white;
       font-family: Inter, 'Helvetica Neue', Arial, sans-serif;
-      font-feature-settings: normal;
       font-size: 14px;
-      height: 100%;
       width: 100%;
+      height: 100%;
       letter-spacing: 0.028px;
       line-height: 22.4px;
       overflow-wrap: break-word;
       tab-size: 4;
       text-size-adjust: 100%;
-      white-space: pre-wrap; /* Ensures the text preserves spaces */
-      outline: none; /* Remove the blue border */
-      resize: none; /* Prevent resizing */
-      background-color: transparent; /* Ensure textarea is transparent to show black background */
+      white-space: pre-wrap;
+      outline: none;
+      resize: none;
+      background-color: transparent;
     }
   </style>
 </head>
 <body>
-  <textarea id="editor"></textarea>
+  <div class="container">
+    <textarea id="editor" autofocus></textarea>
+  </div>
   <script src="iframe.js"></script>
 </body>
 </html>
