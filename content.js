@@ -12,11 +12,14 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       } else {
         iframe = document.createElement('iframe');
         iframe.src = chrome.runtime.getURL('iframe.html');
-        iframe.style.cssText = 'position:fixed;top:10%;left:10%;width:300px;height:200px;z-index:10000;border:1px solid black;background-color:white;';
+        iframe.style.cssText = 'position:fixed;top:50%;left:50%;width:300px;height:300px;z-index:10000;border:none;transform:translate(-50%, -50%);border-radius:15px;overflow:hidden;';
 
         // Add onload event listener to focus on the iframe's textarea
         iframe.onload = function() {
-          iframe.contentWindow.document.getElementById('editor').focus();
+          const editor = iframe.contentWindow.document.getElementById('editor');
+          if (editor) {
+            editor.focus(); // Ensure the textarea is focused after iframe is loaded
+          }
         };
 
         document.body.appendChild(iframe);

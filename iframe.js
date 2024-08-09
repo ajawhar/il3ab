@@ -1,6 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
   const editor = document.getElementById('editor');
 
+  // Ensure the editor is focused after content is loaded
+  editor.focus();
+
   // Load saved content
   chrome.storage.sync.get('iframeContent', function(result) {
     if (result.iframeContent) {
@@ -14,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.storage.sync.set({iframeContent: content}, function() {
       console.log('Content auto-saved');
     });
-  }, 5000); // Auto-save interval in milliseconds
+  }, 1000); // Auto-save interval in milliseconds
 
   // Save content on typing (optional)
   editor.addEventListener('input', () => {
