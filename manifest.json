@@ -1,0 +1,35 @@
+{
+  "manifest_version": 2,
+  "name": "il3ab Shortcut Extension",
+  "version": "1.0",
+  "description": "Opens an iframe with a keyboard shortcut and allows editing content",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "storage",
+    "<all_urls>"
+  ],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    "iframe.html"
+  ],
+  "commands": {
+    "toggle-iframe": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+F",
+        "mac": "Command+Shift+F"
+      },
+      "description": "Toggle iframe"
+    }
+  }
+}
