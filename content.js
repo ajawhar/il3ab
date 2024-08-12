@@ -12,18 +12,27 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       } else {
         iframe = document.createElement('iframe');
         iframe.src = chrome.runtime.getURL('iframe.html');
-        iframe.style.cssText = 'position:fixed;top:50%;left:50%;width:500px;height:300px;z-index:10000;border:none;transform:translate(-50%, -50%);border-radius:15px;overflow:hidden;';
+        iframe.style.cssText = `
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          width: 500px;
+          height: 300px;
+          z-index: 10000;
+          border: none;
+          transform: translate(-50%, -50%);
+          border-radius: 15px;
+          overflow: hidden;
+          background-color: rgba(0, 0, 0, 0.5);
+        `;
 
-        // Add onload event listener to focus on the iframe's textarea
-        iframe.onload = function() {
-          const editor = iframe.contentWindow.document.getElementById('editor');
-          if (editor) {
-            editor.focus(); // Ensure the textarea is focused after iframe is loaded
-          }22
-        };
-
+        // Append the iframe to the document
         document.body.appendChild(iframe);
 
+        // Post a message to the iframe to focus the textarea after loading
+        iframe.onload = function() {
+          iframe.contentWindow.postMessage({ action: 'focusEditor' }, '*');
+        };
       }
       sendResponse({status: "Iframe toggled successfully"});
     } catch (error) {

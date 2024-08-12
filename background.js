@@ -4,7 +4,7 @@ function sendMessageToActiveTab(retries = 3) {
       chrome.tabs.sendMessage(tabs[0].id, {action: "toggleIframe"}, function(response) {
         if (chrome.runtime.lastError) {
           console.error("Error sending message:", chrome.runtime.lastError.message);
-          if (retries > 0 && chrome.runtime.lastError.message.includes("port closed")) {
+          if (retries > 0 && chrome.runtime.lastError.message.includes("Receiving end does not exist")) {
             console.log("Retrying...");
             setTimeout(() => sendMessageToActiveTab(retries - 1), 100);
           }
