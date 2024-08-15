@@ -24,6 +24,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
           border-radius: 15px;
           overflow: hidden;
           background-color: rgba(0, 0, 0, 0.5);
+          box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5); /* Stronger shadow with more blur */
         `;
 
         // Append the iframe to the document
