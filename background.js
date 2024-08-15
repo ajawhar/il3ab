@@ -1,7 +1,7 @@
 function sendMessageToActiveTab(retries = 3) {
-  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     if (tabs && tabs.length > 0) {
-      chrome.tabs.sendMessage(tabs[0].id, {action: "toggleIframe"}, function(response) {
+      chrome.tabs.sendMessage(tabs[0].id, { action: "toggleIframe" }, function (response) {
         if (chrome.runtime.lastError) {
           console.error("Error sending message:", chrome.runtime.lastError.message);
           if (retries > 0 && chrome.runtime.lastError.message.includes("Receiving end does not exist")) {
@@ -23,9 +23,30 @@ function sendMessageToActiveTab(retries = 3) {
   });
 }
 
-chrome.commands.onCommand.addListener(function(command) {
+// Listen for keyboard commands (e.g., Ctrl+Shift+F) to toggle the iframe
+chrome.commands.onCommand.addListener(function (command) {
   console.log("Command received:", command);
   if (command === "toggle-iframe") {
     sendMessageToActiveTab();
   }
+});
+
+// Ensure that data is saved before the extension closes or before a window or tab is removed
+chrome.windows.onRemoved.addListener(() => {
+  console.log("Window closed, ensuring content is saved...");
+  chrome.storage.sync.get('iframeContent', function (data) {
+    // Make sure the content is saved to both local and sync storage
+    chrome.storage.local.set({ iframeContent: data.iframeContent }, function () {
+      console.log("Content saved locally before window close");
+    });
+  });
+});
+
+chrome.tabs.onRemoved.addListener(() => {
+  console.log("Tab closed, ensuring content is saved...");
+  chrome.storage.sync.get('iframeContent', function (data) {
+    chrome.storage.local.set({ iframeContent: data.iframeContent }, function () {
+      console.log("Content saved locally before tab close");
+    });
+  });
 });
