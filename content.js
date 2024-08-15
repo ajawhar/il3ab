@@ -14,7 +14,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         iframe.src = chrome.runtime.getURL('iframe.html');
         iframe.style.cssText = `
           position: fixed;
-          top: 50%;
+          top: 30%;
           left: 50%;
           width: 500px;
           height: 300px;
