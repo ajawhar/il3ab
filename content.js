@@ -4,6 +4,8 @@ let iframe = null;
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   console.log("Message received in content script:", request);
+
+  // Handle the toggleIframe action (unchanged)
   if (request.action === "toggleIframe") {
     try {
       if (iframe) {
@@ -30,7 +32,6 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
           background-color: rgba(0, 0, 0, 0.5);
           box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5); /* Stronger shadow with more blur */
         `;
-        // Append the iframe to the document
         document.body.appendChild(iframe);
 
         // Post a message to the iframe to focus the textarea after loading
@@ -44,6 +45,29 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       sendResponse({ status: "Error", error: error.toString() });
     }
   }
+
+  // Handle the checkSelection action
+  if (request.action === "checkSelection") {
+    const selectedText = window.getSelection().toString();  // Get the selected text
+    const pageUrl = window.location.href;  // Get the URL of the current page
+
+    if (selectedText) {
+      const contentToCopy = `Selected Text: ${selectedText}\nSource URL: ${pageUrl}`;
+
+      // Perform the clipboard operation
+      navigator.clipboard.writeText(contentToCopy).then(() => {
+        console.log("Text and URL copied to clipboard:", contentToCopy);
+        sendResponse({ selectedText: selectedText, pageUrl: pageUrl });
+      }).catch(err => {
+        console.error("Failed to copy text:", err);
+        sendResponse({ selectedText: null });
+      });
+    } else {
+      console.log("No text selected.");
+      sendResponse({ selectedText: null });
+    }
+  }
+
   return true;  // Indicates that we will send a response asynchronously
 });
 

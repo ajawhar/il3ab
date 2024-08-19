@@ -1,6 +1,7 @@
 function sendMessageToActiveTab(retries = 3) {
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     if (tabs && tabs.length > 0) {
+      // Send a message to toggle the iframe
       chrome.tabs.sendMessage(tabs[0].id, { action: "toggleIframe" }, function (response) {
         if (chrome.runtime.lastError) {
           console.error("Error sending message:", chrome.runtime.lastError.message);
@@ -10,6 +11,17 @@ function sendMessageToActiveTab(retries = 3) {
           }
         } else {
           console.log("Message sent successfully, response:", response);
+        }
+      });
+
+      // Send a message to the content script to check for selected text and copy it to the clipboard
+      chrome.tabs.sendMessage(tabs[0].id, { action: "checkSelection" }, function (response) {
+        if (chrome.runtime.lastError) {
+          console.error("Error sending message:", chrome.runtime.lastError.message);
+        } else if (response && response.selectedText) {
+          console.log("Text selection found:", response.selectedText);
+        } else {
+          console.log("No text selected.");
         }
       });
     } else {
@@ -23,7 +35,7 @@ function sendMessageToActiveTab(retries = 3) {
   });
 }
 
-// Listen for keyboard commands (e.g., Ctrl+Shift+F) to toggle the iframe
+// Listen for keyboard commands (e.g., Ctrl+Shift+F) to toggle the iframe and check for selection
 chrome.commands.onCommand.addListener(function (command) {
   console.log("Command received:", command);
   if (command === "toggle-iframe") {
