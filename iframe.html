@@ -28,7 +28,7 @@
       justify-content: center;
       align-items: center;
     }
-    textarea {
+    #editor {
       border: none;
       box-sizing: border-box;
       color: white;
@@ -43,14 +43,18 @@
       text-size-adjust: 100%;
       white-space: pre-wrap;
       outline: none;
-      resize: none;
       background-color: transparent;
+    }
+    /* Make sure the contenteditable div behaves similarly to textarea */
+    #editor[contenteditable="true"] {
+      min-height: 100%; /* Ensures the div grows dynamically like a textarea */
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <textarea id="editor" autofocus></textarea>
+    <!-- Replace textarea with a contenteditable div -->
+    <div id="editor" contenteditable="true" autofocus></div>
   </div>
   <script src="iframe.js"></script>
 </body>
