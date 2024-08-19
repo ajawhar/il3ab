@@ -52,7 +52,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     const pageUrl = window.location.href;  // Get the URL of the current page
 
     if (selectedText) {
-      const contentToCopy = `Selected Text: ${selectedText}\nSource URL: ${pageUrl}`;
+      const contentToCopy = `${selectedText}\n${pageUrl}\n`;
 
       // Perform the clipboard operation
       navigator.clipboard.writeText(contentToCopy).then(() => {
