@@ -1,5 +1,5 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "il3ab Shortcut Extension",
   "version": "1.0",
   "description": "Opens an iframe with a keyboard shortcut and allows editing content",
@@ -7,11 +7,10 @@
     "activeTab",
     "tabs",
     "storage",
-    "<all_urls>"
+    "clipboardWrite"
   ],
   "background": {
-    "scripts": ["background.js"],
-    "persistent": false
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
@@ -21,9 +20,12 @@
     }
   ],
   "web_accessible_resources": [
-    "iframe.html"
+    {
+      "resources": ["iframe.html"],
+      "matches": ["<all_urls>"]
+    }
   ],
-   "icons": {
+  "icons": {
     "16": "icons/bolt_16dp_EAC452.png",
     "48": "icons/bolt_48dp_EAC452.png",
     "128": "icons/bolt_128dp_EAC452.png"
@@ -31,10 +33,13 @@
   "commands": {
     "toggle-iframe": {
       "suggested_key": {
-        "default": "Ctrl+Shift+F",
-        "mac": "Command+Shift+F"
+        "default": "Ctrl+Shift+Y",
+        "mac": "Command+Shift+Y"
       },
       "description": "Toggle iframe"
     }
-  }
+  },
+  "host_permissions": [
+    "<all_urls>"
+  ]
 }
