@@ -1,34 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Iframe Editor</title>
   <style>
-    html, body {
-      font-family: Inter, 'Helvetica Neue', Arial, sans-serif;
+    body {
       margin: 0;
       padding: 0;
-      height: 100%;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      color: white;
-      box-sizing: border-box;
-    }
-    .container {
-      width: 100%;
-      height: 100%;
-      padding: 10px; /* Padding inside the container */
-      box-sizing: border-box;
-      background-color: rgba(0, 0, 0, 0.75); /* Slightly transparent inner background */
-      border-radius: 15px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow-y: auto;
-
+      background-color: rgb(30 30 30 / 90%); /* Set semi-transparent background */
     }
     #editor {
       border: none;
@@ -45,19 +22,16 @@
       text-size-adjust: 100%;
       white-space: pre-wrap;
       outline: none;
-      background-color: transparent;
+      background-color: transparent; /* Keep editor background transparent */
+      padding: 5px 10px;
     }
-    /* Make sure the contenteditable div behaves similarly to textarea */
     #editor[contenteditable="true"] {
-      min-height: 100%; /* Ensures the div grows dynamically like a textarea */
+      min-height: 100%;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Replace textarea with a contenteditable div -->
-    <div id="editor" contenteditable="true" autofocus></div>
-  </div>
+  <div id="editor" contenteditable="true" autofocus></div>
   <script src="iframe.js"></script>
 </body>
 </html>

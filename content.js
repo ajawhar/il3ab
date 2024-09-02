@@ -1,6 +1,127 @@
 console.log("Content script loaded");
 
-let iframe = null;
+let iframe;
+let isDragging = false;
+let startX, startY;
+
+// Function to create and append the iframe
+function createIframe() {
+  const headerHeight = '20px';
+  const backgroundColor = 'rgb(30 30 30 / 95%)'; // Semi-transparent background
+  const hoverBackgroundColor = 'rgb(15 15 15 / 100%)'; // Even darker on hover
+
+  // Create a container for the iframe
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.width = '500px';
+  container.style.height = '300px';
+  container.style.border = 'none';
+  container.style.zIndex = '9999';
+  container.style.backgroundColor = backgroundColor;
+  container.style.borderRadius = '10px';
+  container.style.overflow = 'hidden';
+  container.style.boxShadow = '0 6px 10px rgba(0, 0, 0, 0.2)';
+  
+  // Create a draggable header
+  const header = document.createElement('div');
+  header.style.height = headerHeight;
+  header.style.backgroundColor = backgroundColor; // Set header background
+  header.style.cursor = 'move';
+  header.style.padding = '2px 5px';
+  header.style.transition = 'background-color 0.3s ease';
+
+  // Add hover effect only for the header
+  header.addEventListener('mouseenter', () => {
+    header.style.backgroundColor = hoverBackgroundColor; // Even darker on hover
+  });
+
+  header.addEventListener('mouseleave', () => {
+    if (!isDragging) {
+      header.style.backgroundColor = backgroundColor;
+    }
+  });
+
+  // Update header color when dragging starts and ends
+  const originalStartDragging = startDragging;
+  startDragging = (e) => {
+    originalStartDragging(e);
+    header.style.backgroundColor = 'rgb(30 30 30 / 95%)'; // Darker when dragging
+  };
+
+  const originalStopDragging = stopDragging;
+  stopDragging = () => {
+    originalStopDragging();
+    if (!header.matches(':hover')) {
+      header.style.backgroundColor = backgroundColor;
+    }
+  };
+
+  // Create the iframe
+  iframe = document.createElement('iframe');
+  iframe.src = chrome.runtime.getURL('iframe.html');
+  iframe.style.width = '100%';
+  iframe.style.height = `calc(100% - ${headerHeight})`; // Use the variable here
+  iframe.style.border = 'none';
+  iframe.style.backgroundColor = 'transparent';
+
+  // Append elements
+  container.appendChild(header);
+  container.appendChild(iframe);
+  document.body.appendChild(container);
+
+  // Retrieve the last saved position
+  chrome.storage.local.get(['iframeX', 'iframeY'], function(result) {
+    container.style.left = (result.iframeX || '20') + 'px';
+    container.style.top = (result.iframeY || '20') + 'px';
+  });
+
+  // Add event listeners for dragging
+  header.addEventListener('mousedown', startDragging);
+  document.addEventListener('mousemove', drag);
+  document.addEventListener('mouseup', stopDragging);
+
+  // Store the container reference
+  iframe.container = container;
+}
+
+function startDragging(e) {
+  isDragging = true;
+  startX = e.clientX - iframe.container.offsetLeft;
+  startY = e.clientY - iframe.container.offsetTop;
+  document.addEventListener('selectstart', preventDefault);
+}
+
+function drag(e) {
+  if (isDragging) {
+    const newX = e.clientX - startX;
+    const newY = e.clientY - startY;
+    iframe.container.style.left = newX + 'px';
+    iframe.container.style.top = newY + 'px';
+    e.preventDefault(); // Prevent any default behavior during drag
+  }
+}
+
+function stopDragging() {
+  if (isDragging) {
+    isDragging = false;
+    document.removeEventListener('selectstart', preventDefault);
+    // Save the new position
+    chrome.storage.local.set({
+      iframeX: parseInt(iframe.container.style.left),
+      iframeY: parseInt(iframe.container.style.top)
+    });
+    // Notify the background script about the position change
+    chrome.runtime.sendMessage({
+      action: "updatePosition",
+      x: parseInt(iframe.container.style.left),
+      y: parseInt(iframe.container.style.top)
+    });
+  }
+}
+
+function preventDefault(e) {
+  e.preventDefault();
+}
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   console.log("Message received in content script:", request);
@@ -11,33 +132,12 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       if (iframe) {
         // Save content before removing the iframe
         saveContentBeforeClose(function () {
-          document.body.removeChild(iframe);
+          document.body.removeChild(iframe.container);
           iframe = null;
           sendResponse({ status: "Iframe removed and content saved successfully" });
         });
       } else {
-        iframe = document.createElement('iframe');
-        iframe.src = chrome.runtime.getURL('iframe.html');
-        iframe.style.cssText = `
-          position: fixed;
-          top: 30%;
-          left: 50%;
-          width: 500px;
-          height: 300px;
-          z-index: 10000;
-          border: none;
-          transform: translate(-50%, -50%);
-          border-radius: 15px;
-          overflow: hidden;
-          background-color: rgba(0, 0, 0, 0.5);
-          box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5); /* Stronger shadow with more blur */
-        `;
-        document.body.appendChild(iframe);
-
-        // Post a message to the iframe to focus the textarea after loading
-        iframe.onload = function () {
-          iframe.contentWindow.postMessage({ action: 'focusEditor' }, '*');
-        };
+        createIframe();
         sendResponse({ status: "Iframe created successfully" });
       }
     } catch (error) {

@@ -54,3 +54,38 @@ chrome.runtime.onSuspend.addListener(() => {
     });
   });
 });
+
+let lastActiveTabId = null;
+let iframePosition = { x: 20, y: 20 };
+
+chrome.tabs.onActivated.addListener(function(activeInfo) {
+  lastActiveTabId = activeInfo.tabId;
+});
+
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+  if (request.action === "updatePosition") {
+    iframePosition = { x: request.x, y: request.y };
+    // Update the position for the current tab
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      if (tabs[0]) {
+        chrome.storage.local.set({
+          [tabs[0].id]: iframePosition
+        });
+      }
+    });
+  }
+});
+
+chrome.tabs.onCreated.addListener(function(tab) {
+  if (lastActiveTabId) {
+    // Get the position from the last active tab
+    chrome.storage.local.get([lastActiveTabId.toString()], function(result) {
+      if (result[lastActiveTabId]) {
+        // Set the position for the new tab
+        chrome.storage.local.set({
+          [tab.id]: result[lastActiveTabId]
+        });
+      }
+    });
+  }
+});
