@@ -29,6 +29,53 @@ function createIframe() {
   header.style.cursor = 'move';
   header.style.padding = '2px 5px';
   header.style.transition = 'background-color 0.3s ease';
+  header.style.display = 'flex';
+  header.style.justifyContent = 'space-between';
+  header.style.alignItems = 'center';
+  // Create storage info element
+  const storageInfo = document.createElement('div');
+  storageInfo.style.fontSize = '10px';
+  storageInfo.style.color = 'white';
+  storageInfo.style.marginLeft = 'auto'; // Push to the right
+  storageInfo.style.marginRight = '5px';
+
+  // Function to update storage info
+  function updateStorageInfo() {
+    chrome.storage.local.getBytesInUse(null, (bytesInUse) => {
+      const totalBytes = chrome.storage.local.QUOTA_BYTES;
+      const usedPercentage = ((bytesInUse / totalBytes) * 100).toFixed(2);
+      const totalMB = (totalBytes / (1024 * 1024)).toFixed(2);
+      
+      storageInfo.textContent = `${usedPercentage}% of ${totalMB}MB`;
+    });
+  }
+
+  // Initial update and set interval for periodic updates
+  updateStorageInfo();
+  setInterval(updateStorageInfo, 5000); // Update every 5 seconds
+
+  // Append storage info to header
+  header.appendChild(storageInfo);
+
+  // Create clipboard icon element
+  const clipboardIcon = document.createElement('div');
+  clipboardIcon.innerHTML = '📋'; // Unicode clipboard icon
+  clipboardIcon.style.fontSize = '14px';
+  clipboardIcon.style.marginRight = '5px';
+  clipboardIcon.style.display = 'none'; // Initially hidden
+
+  // Function to show clipboard icon
+  function showClipboardIcon() {
+    clipboardIcon.style.display = 'block';
+  }
+
+  // Function to hide clipboard icon
+  function hideClipboardIcon() {
+    clipboardIcon.style.display = 'none';
+  }
+
+  // Append clipboard icon to header
+  header.appendChild(clipboardIcon);
 
   // Add hover effect only for the header
   header.addEventListener('mouseenter', () => {
@@ -82,7 +129,13 @@ function createIframe() {
 
   // Store the container reference
   iframe.container = container;
+
+  // Add event listeners for copy and paste events
+  document.addEventListener('copy', showClipboardIcon);
+  document.addEventListener('paste', hideClipboardIcon);
 }
+
+let lastUsedPercentage = -1; // Initialize with an impossible value
 
 function startDragging(e) {
   isDragging = true;
@@ -180,3 +233,23 @@ function saveContentBeforeClose(callback) {
     });
   });
 }
+
+// Set up a MutationObserver to watch for changes in storage
+const observer = new MutationObserver(updateStorageInfo);
+observer.observe(document.body, { subtree: true, childList: true, characterData: true });
+
+// Also update when the window gets focus
+window.addEventListener('focus', updateStorageInfo);
+
+// Add these functions outside of createIframe
+function handleCopy() {
+  chrome.runtime.sendMessage({action: "showClipboardIcon"});
+}
+
+function handlePaste() {
+  chrome.runtime.sendMessage({action: "hideClipboardIcon"});
+}
+
+// Add these event listeners
+document.addEventListener('copy', handleCopy);
+document.addEventListener('paste', handlePaste);
