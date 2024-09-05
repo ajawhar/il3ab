@@ -1,42 +1,79 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const editor = document.getElementById('editor');
+  const editor = document.getElementById('editor'); // Get the contenteditable element
 
+  // Ensure the editor is focused after content is loaded
+  editor.focus();
+
+  // Function to load content from storage and set the editor's content
   function loadContent() {
-    chrome.storage.local.get(['iframeContent', 'firstUse'], function (result) {
-      if (result.firstUse !== false) {
-        // First-time use
-        editor.innerHTML = 'Welcome to il3ab Shortcut Extension!<br><br>This is your personal notepad that you can access anytime with Ctrl+Shift+F (or Cmd+Shift+F on Mac).<br><br>Start typing to begin using the extension.';
-        chrome.storage.local.set({ firstUse: true });
-      } else if (result.iframeContent) {
-        // Returning user, load saved content
-        editor.innerHTML = result.iframeContent;
+    // First, try to get the content from Chrome's sync storage
+    chrome.storage.sync.get('iframeContent', function (syncResult) {
+      // Check if there's an error or if no content is found in sync storage
+      if (chrome.runtime.lastError || !syncResult.iframeContent) {
+        // If no content in sync storage, try local storage
+        chrome.storage.local.get('iframeContent', function (localResult) {
+          // If content is found in local storage, set it to the editor
+          if (localResult.iframeContent) {
+            editor.innerHTML = localResult.iframeContent;
+          }
+        });
+      } else {
+        // If content is found in sync storage, set it to the editor
+        editor.innerHTML = syncResult.iframeContent;
       }
     });
   }
 
+  // Load content from storage when the iframe is loaded
   loadContent();
 
-  function handleFirstInput() {
-    chrome.storage.local.get('firstUse', function(result) {
-      if (result.firstUse === true) {
-        // Clear the welcome message on first input
-        editor.innerHTML = '';
-        chrome.storage.local.set({ firstUse: false });
-        // Remove this event listener after first use
-        editor.removeEventListener('input', handleFirstInput);
-      }
-    });
-  }
-
-  editor.addEventListener('input', handleFirstInput);
-
-  // Existing auto-save functionality
+  // Auto-save content every second
   setInterval(() => {
-    const content = editor.innerHTML;
+    const content = editor.innerHTML; // Get the current content of the editor
+
+    // Save the current content to local storage
     chrome.storage.local.set({ iframeContent: content }, function () {
       console.log('Content auto-saved locally');
-    });
-  }, 1000);
 
-  // ... (rest of your existing code)
+      // After saving to local storage, also save it to sync storage
+      chrome.storage.sync.set({ iframeContent: content }, function () {
+        console.log('Content auto-synced');
+      });
+    });
+  }, 1000); // The save happens every 1000ms (1 second)
+
+  // Save content on typing (input event)
+  editor.addEventListener('input', () => {
+    const content = editor.innerHTML; // Get the content currently in the editor
+
+    // Save the content to local storage
+    chrome.storage.local.set({ iframeContent: content }, function () {
+      console.log('Content saved locally on input');
+
+      // After saving to local storage, also save it to sync storage
+      chrome.storage.sync.set({ iframeContent: content }, function () {
+        console.log('Content synced on input');
+      });
+    });
+  });
+
+  // Listen for changes in storage and update the content dynamically if needed
+  chrome.storage.onChanged.addListener(function (changes, namespace) {
+    // If the changes come from sync storage and the iframeContent has been updated
+    if (namespace === 'sync' && changes.iframeContent) {
+      // Only update the editor content if the new value is different from the current content
+      if (changes.iframeContent.newValue !== editor.innerHTML) {
+        editor.innerHTML = changes.iframeContent.newValue; // Set the new content to the editor
+        console.log('Content updated from sync storage');
+      }
+    }
+    // If the changes come from local storage and the iframeContent has been updated
+    else if (namespace === 'local' && changes.iframeContent) {
+      // Only update the editor content if the new value is different from the current content
+      if (changes.iframeContent.newValue !== editor.innerHTML) {
+        editor.innerHTML = changes.iframeContent.newValue; // Set the new content to the editor
+        console.log('Content updated from local storage');
+      }
+    }
+  });
 });
