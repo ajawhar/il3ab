@@ -7,19 +7,32 @@ document.addEventListener('DOMContentLoaded', () => {
   // Function to load content from storage and set the editor's content
   function loadContent() {
     // First, try to get the content from Chrome's sync storage
-    chrome.storage.sync.get('iframeContent', function (syncResult) {
+    chrome.storage.sync.get(['iframeContent', 'firstUse'], function (syncResult) {
       // Check if there's an error or if no content is found in sync storage
-      if (chrome.runtime.lastError || !syncResult.iframeContent) {
+      if (chrome.runtime.lastError || (!syncResult.iframeContent && syncResult.firstUse !== false)) {
         // If no content in sync storage, try local storage
-        chrome.storage.local.get('iframeContent', function (localResult) {
+        chrome.storage.local.get(['iframeContent', 'firstUse'], function (localResult) {
           // If content is found in local storage, set it to the editor
-          if (localResult.iframeContent) {
+          if (localResult.firstUse !== false) {
+            editor.innerHTML = '<div id="editor" contenteditable="true">' +
+              'Welcome to &#9889; il3ab &#9889;.<br>' +
+              '<p>Access this &#128221; anytime with Cmd+Shift+F.</p>' +
+              '<ul>' +
+                '<li><b>Ctrl+B</b> and <i>Ctrl+I</i> to toggle bold and italic. <u>Underline too</u>.</li>' +
+                '<li>Highlight text &#128397; then open the note taker so you can automatically paste it &#128203;.</li>' +
+                '<li>More to come..</li>' +
+              '</ul>' +
+              '<p>Start typing to begin using the extension..or maybe just delete this text first. &#9989;</p>' +
+            '</div>';
+            chrome.storage.local.set({ firstUse: true });
+            chrome.storage.sync.set({ firstUse: true });
+          } else if (localResult.iframeContent) {
             editor.innerHTML = localResult.iframeContent;
           }
         });
       } else {
         // If content is found in sync storage, set it to the editor
-        editor.innerHTML = syncResult.iframeContent;
+        editor.innerHTML = syncResult.iframeContent || '';
       }
     });
   }
@@ -76,4 +89,19 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
+
+  // Function to handle first input and set firstUse to false
+  function handleFirstInput() {
+    chrome.storage.sync.get('firstUse', function(syncResult) {
+      if (syncResult.firstUse === true) {
+        editor.innerHTML = '';
+        chrome.storage.sync.set({ firstUse: false });
+        chrome.storage.local.set({ firstUse: false });
+        editor.removeEventListener('input', handleFirstInput);
+      }
+    });
+  }
+
+  // Add event listener for first input
+  editor.addEventListener('input', handleFirstInput);
 });
