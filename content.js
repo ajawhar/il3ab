@@ -8,7 +8,7 @@ let startX, startY;
 function createIframe() {
   const headerHeight = '20px';
   const backgroundColor = 'rgb(30 30 30 / 95%)'; // Semi-transparent background
-  const hoverBackgroundColor = 'rgb(15 15 15 / 100%)'; // Even darker on hover
+  const hoverBackgroundColor = 'rgb(15 15 15 / 100%)'; // Darker on hover and drag
 
   // Create a container for the iframe
   const container = document.createElement('div');
@@ -25,10 +25,8 @@ function createIframe() {
   // Create a draggable header
   const header = document.createElement('div');
   header.style.height = headerHeight;
-  header.style.backgroundColor = backgroundColor; // Set header background
   header.style.cursor = 'move';
   header.style.padding = '2px 5px';
-  header.style.transition = 'background-color 0.3s ease';
   header.style.display = 'flex';
   header.style.justifyContent = 'space-between';
   header.style.alignItems = 'center';
@@ -57,34 +55,14 @@ function createIframe() {
   // Append storage info to header
   header.appendChild(storageInfo);
 
-  // Create clipboard icon element
-  const clipboardIcon = document.createElement('div');
-  clipboardIcon.innerHTML = '📋'; // Unicode clipboard icon
-  clipboardIcon.style.fontSize = '14px';
-  clipboardIcon.style.marginRight = '5px';
-  clipboardIcon.style.display = 'none'; // Initially hidden
-
-  // Function to show clipboard icon
-  function showClipboardIcon() {
-    clipboardIcon.style.display = 'block';
-  }
-
-  // Function to hide clipboard icon
-  function hideClipboardIcon() {
-    clipboardIcon.style.display = 'none';
-  }
-
-  // Append clipboard icon to header
-  header.appendChild(clipboardIcon);
-
   // Add hover effect only for the header
   header.addEventListener('mouseenter', () => {
-    header.style.backgroundColor = hoverBackgroundColor; // Even darker on hover
+    header.style.backgroundColor = hoverBackgroundColor; // Darker on hover
   });
 
   header.addEventListener('mouseleave', () => {
     if (!isDragging) {
-      header.style.backgroundColor = backgroundColor;
+      header.style.backgroundColor = 'transparent';
     }
   });
 
@@ -92,15 +70,13 @@ function createIframe() {
   const originalStartDragging = startDragging;
   startDragging = (e) => {
     originalStartDragging(e);
-    header.style.backgroundColor = 'rgb(30 30 30 / 95%)'; // Darker when dragging
+    header.style.backgroundColor = hoverBackgroundColor; // Use hover background when dragging
   };
 
   const originalStopDragging = stopDragging;
   stopDragging = () => {
     originalStopDragging();
-    if (!header.matches(':hover')) {
-      header.style.backgroundColor = backgroundColor;
-    }
+    header.style.backgroundColor = 'transparent';
   };
 
   // Create the iframe
@@ -129,10 +105,6 @@ function createIframe() {
 
   // Store the container reference
   iframe.container = container;
-
-  // Add event listeners for copy and paste events
-  document.addEventListener('copy', showClipboardIcon);
-  document.addEventListener('paste', hideClipboardIcon);
 }
 
 let lastUsedPercentage = -1; // Initialize with an impossible value
@@ -240,16 +212,3 @@ observer.observe(document.body, { subtree: true, childList: true, characterData:
 
 // Also update when the window gets focus
 window.addEventListener('focus', updateStorageInfo);
-
-// Add these functions outside of createIframe
-function handleCopy() {
-  chrome.runtime.sendMessage({action: "showClipboardIcon"});
-}
-
-function handlePaste() {
-  chrome.runtime.sendMessage({action: "hideClipboardIcon"});
-}
-
-// Add these event listeners
-document.addEventListener('copy', handleCopy);
-document.addEventListener('paste', handlePaste);
