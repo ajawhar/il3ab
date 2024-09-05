@@ -36,6 +36,7 @@ function createIframe() {
   storageInfo.style.color = 'white';
   storageInfo.style.marginLeft = 'auto'; // Push to the right
   storageInfo.style.marginRight = '5px';
+  storageInfo.style.display = 'none'; // Initially hidden
 
   // Function to update storage info
   function updateStorageInfo() {
@@ -48,44 +49,47 @@ function createIframe() {
     });
   }
 
-  // Initial update and set interval for periodic updates
-  updateStorageInfo();
-  setInterval(updateStorageInfo, 5000); // Update every 5 seconds
-
   // Append storage info to header
   header.appendChild(storageInfo);
 
-  // Add hover effect only for the header
+  // Show storage info on hover and drag
   header.addEventListener('mouseenter', () => {
     header.style.backgroundColor = hoverBackgroundColor; // Darker on hover
+    storageInfo.style.display = 'block';
+    updateStorageInfo();
   });
 
   header.addEventListener('mouseleave', () => {
     if (!isDragging) {
       header.style.backgroundColor = 'transparent';
+      storageInfo.style.display = 'none';
     }
   });
 
-  // Update header color when dragging starts and ends
+  // Update header color and show storage info when dragging starts and ends
   const originalStartDragging = startDragging;
   startDragging = (e) => {
     originalStartDragging(e);
     header.style.backgroundColor = hoverBackgroundColor; // Use hover background when dragging
+    storageInfo.style.display = 'block';
+    updateStorageInfo();
   };
 
   const originalStopDragging = stopDragging;
   stopDragging = () => {
     originalStopDragging();
     header.style.backgroundColor = 'transparent';
+    storageInfo.style.display = 'none';
   };
 
   // Create the iframe
   iframe = document.createElement('iframe');
   iframe.src = chrome.runtime.getURL('iframe.html');
   iframe.style.width = '100%';
-  iframe.style.height = `calc(100% - ${headerHeight})`; // Use the variable here
+  iframe.style.height = `calc(100% - ${headerHeight})`;
   iframe.style.border = 'none';
   iframe.style.backgroundColor = 'transparent';
+
 
   // Append elements
   container.appendChild(header);
@@ -173,23 +177,33 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 
   // Handle the checkSelection action
   if (request.action === "checkSelection") {
-    const selectedText = window.getSelection().toString();  // Get the selected text
-    const pageUrl = window.location.href;  // Get the URL of the current page
+    const selectedText = window.getSelection().toString().trim();
+    const pageUrl = window.location.href;
 
     if (selectedText) {
-      const contentToCopy = `${selectedText}\n${pageUrl}\n`;
+      const formattedLink = `- <a href="${pageUrl}" style="color: blue; text-decoration: underline;">Link</a>`;
+      const htmlContent = `<p>${selectedText} ${formattedLink}</p>`;
 
-      // Perform the clipboard operation
-      navigator.clipboard.writeText(contentToCopy).then(() => {
-        console.log("Text and URL copied to clipboard:", contentToCopy);
-        sendResponse({ selectedText: selectedText, pageUrl: pageUrl });
+      // Create a temporary element to hold the HTML content
+      const tempElement = document.createElement('div');
+      tempElement.innerHTML = htmlContent;
+
+      // Use the Clipboard API to write both HTML and plain text
+      navigator.clipboard.write([
+        new ClipboardItem({
+          'text/plain': new Blob([`${selectedText} - ${pageUrl}`], { type: 'text/plain' }),
+          'text/html': new Blob([tempElement.innerHTML], { type: 'text/html' })
+        })
+      ]).then(() => {
+        console.log("Text and formatted link copied to clipboard");
+        sendResponse({ status: "success", content: htmlContent });
       }).catch(err => {
         console.error("Failed to copy text:", err);
-        sendResponse({ selectedText: null });
+        sendResponse({ status: "error", error: err.toString() });
       });
     } else {
       console.log("No text selected.");
-      sendResponse({ selectedText: null });
+      sendResponse({ status: "error", error: "No text selected" });
     }
   }
 
