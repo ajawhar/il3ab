@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 '<li><b>Ctrl+B</b> and <i>Ctrl+I</i> to toggle bold and italic. <u>Underline too</u>.</li>' +
                 '<li>Highlight text &#128397; then open the note taker so you can automatically paste it &#128203;.</li>' +
                 '<li>More to come..</li>' +
+                '<li>Use Shift+Enter or type "- " at the start of a line for bullet points &#9675;.</li>' +
               '</ul>' +
               '<p>Start typing to begin using the extension..or maybe just delete this text first. &#9989;</p>' +
             '</div>';
@@ -104,4 +105,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Add event listener for first input
   editor.addEventListener('input', handleFirstInput);
+
+  // Add event listener for bullet point creation
+  editor.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.shiftKey) {
+      e.preventDefault();
+      document.execCommand('insertUnorderedList', false, null);
+    }
+  });
+
+  // Function to handle bullet points
+  function handleBulletPoints(e) {
+    if (e.key === ' ' && e.target.textContent.trim() === '-') {
+      e.preventDefault();
+      document.execCommand('delete', false);
+      document.execCommand('insertUnorderedList', false, null);
+    }
+  }
+
+  // Add event listener for bullet point creation
+  editor.addEventListener('keydown', handleBulletPoints);
 });
