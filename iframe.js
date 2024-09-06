@@ -20,8 +20,9 @@ document.addEventListener('DOMContentLoaded', () => {
               '<ul>' +
                 '<li><b>Ctrl+B</b> and <i>Ctrl+I</i> to toggle bold and italic. <u>Underline too</u>.</li>' +
                 '<li>Highlight text &#128397; then open the note taker so you can automatically paste it &#128203;.</li>' +
+                '<li>Use &#8679;+Enter or type "- " at the start of a line for bullet points &#9675;.</li>' +
+                '<li>Use &#8679;+Backspace to toggle <s>strikethrough</s>.</li>' +
                 '<li>More to come..</li>' +
-                '<li>Use Shift+Enter or type "- " at the start of a line for bullet points &#9675;.</li>' +
               '</ul>' +
               '<p>Start typing to begin using the extension..or maybe just delete this text first. &#9989;</p>' +
             '</div>';
@@ -125,4 +126,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Add event listener for bullet point creation
   editor.addEventListener('keydown', handleBulletPoints);
+
+  // Function to handle strikethrough
+  function handleStrikethrough(e) {
+    if (e.key === 'Backspace' && e.shiftKey) {
+      e.preventDefault();
+      document.execCommand('strikeThrough', false, null);
+    }
+  }
+
+  // Add event listener for strikethrough
+  editor.addEventListener('keydown', handleStrikethrough);
 });
