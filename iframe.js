@@ -107,6 +107,21 @@ document.addEventListener('DOMContentLoaded', () => {
   // Add event listener for first input
   editor.addEventListener('input', handleFirstInput);
 
+  // Add custom styles for unordered lists
+  const style = document.createElement('style');
+  style.textContent = `
+    #editor ul {
+      padding-left: 15px;
+      margin: 0;
+      list-style-type: disc;
+    }
+    #editor li {
+      padding-left: 5px;
+      margin: 0;
+    }
+  `;
+  document.head.appendChild(style);
+
   // Add event listener for bullet point creation
   editor.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && e.shiftKey) {
@@ -114,18 +129,6 @@ document.addEventListener('DOMContentLoaded', () => {
       document.execCommand('insertUnorderedList', false, null);
     }
   });
-
-  // Function to handle bullet points
-  function handleBulletPoints(e) {
-    if (e.key === ' ' && e.target.textContent.trim() === '-') {
-      e.preventDefault();
-      document.execCommand('delete', false);
-      document.execCommand('insertUnorderedList', false, null);
-    }
-  }
-
-  // Add event listener for bullet point creation
-  editor.addEventListener('keydown', handleBulletPoints);
 
   // Function to handle strikethrough
   function handleStrikethrough(e) {
