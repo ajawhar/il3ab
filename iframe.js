@@ -48,13 +48,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function saveContent() {
     const currentContent = editor.innerHTML;
     if (currentContent !== lastSavedContent) {
-      chrome.storage.local.set({ iframeContent: currentContent }, function() {
-        console.log('Content saved locally');
-        chrome.storage.sync.set({ iframeContent: currentContent }, function() {
-          console.log('Content synced');
-          lastSavedContent = currentContent;
-        });
-      });
+      lastSavedContent = currentContent;
+      chrome.storage.local.set({ iframeContent: currentContent });
+      chrome.storage.sync.set({ iframeContent: currentContent });
     }
   }
 
@@ -76,9 +72,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // Listen for changes in storage and update the content dynamically
   chrome.storage.onChanged.addListener(function(changes, namespace) {
     if (namespace === 'sync' && changes.iframeContent && changes.iframeContent.newValue !== editor.innerHTML) {
-      editor.innerHTML = changes.iframeContent.newValue;
-      lastSavedContent = changes.iframeContent.newValue;
-      console.log('Content updated from sync storage');
+      const currentTime = Date.now();
+      if (!isEditing && (currentTime - lastEditTime > editThreshold)) {
+        editor.innerHTML = changes.iframeContent.newValue;
+        lastSavedContent = changes.iframeContent.newValue;
+        console.log('Content updated from sync storage');
+      }
     }
   });
 
@@ -130,4 +129,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Add event listener for strikethrough
   editor.addEventListener('keydown', handleStrikethrough);
+
+  // Add event listener for blur to save content
+  editor.addEventListener('blur', () => {
+    isEditing = false;
+    saveContent(); // Assuming you have a saveContent function
+  });
+
+  let isEditing = false;
+  let lastEditTime = 0;
+  const editThreshold = 1000; // 1 second
+
+  editor.addEventListener('focus', () => {
+    isEditing = true;
+  });
+
+  editor.addEventListener('blur', () => {
+    isEditing = false;
+  });
+
+  editor.addEventListener('input', () => {
+    lastEditTime = Date.now();
+  });
 });
