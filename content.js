@@ -72,6 +72,7 @@ function createIframe() {
     originalStartDragging(e);
     header.style.backgroundColor = hoverBackgroundColor; // Use hover background when dragging
     storageInfo.style.display = 'block';
+    shortcutsIcon.style.display = 'block'; // Ensure this line is present
     updateStorageInfo();
   };
 
@@ -80,7 +81,80 @@ function createIframe() {
     originalStopDragging();
     header.style.backgroundColor = 'transparent';
     storageInfo.style.display = 'none';
+    shortcutsIcon.style.display = 'none';
+    shortcutsPopup.style.display = 'none';
   };
+
+  // Create shortcuts icon
+  const shortcutsIcon = document.createElement('div');
+  shortcutsIcon.innerHTML = '<img src="' + chrome.runtime.getURL('icons/keyboard_keys_16dp_E8EAED_FILL0_wght400_GRAD0_opsz20.png') + '" alt="Shortcuts">';
+  shortcutsIcon.style.marginLeft = '10px';
+  shortcutsIcon.style.display = 'flex';
+  shortcutsIcon.style.alignItems = 'center';
+  shortcutsIcon.style.cursor = 'pointer';
+
+  // Set the image size
+  const iconImg = shortcutsIcon.querySelector('img');
+  iconImg.style.width = '16px';
+  iconImg.style.height = '16px';
+  iconImg.style.maxWidth = '16px';
+  iconImg.style.maxHeight = '16px';
+
+  // Initially hidden
+  shortcutsIcon.style.display = 'none';
+
+  // Create shortcuts popup
+  const shortcutsPopup = document.createElement('div');
+  shortcutsPopup.style.position = 'absolute';
+  shortcutsPopup.style.top = '25px';
+  shortcutsPopup.style.right = '5px';
+  shortcutsPopup.style.backgroundColor = '#333';
+  shortcutsPopup.style.padding = '10px';
+  shortcutsPopup.style.borderRadius = '5px';
+  shortcutsPopup.style.zIndex = '10000';
+  shortcutsPopup.style.maxWidth = '300px';
+  shortcutsPopup.style.display = 'none';
+  shortcutsPopup.style.color = 'white';
+  shortcutsPopup.style.fontFamily = "Inter, 'Helvetica Neue', Arial, sans-serif";
+  shortcutsPopup.style.fontSize = '14px';
+  shortcutsPopup.style.lineHeight = '22.4px';
+  shortcutsPopup.style.letterSpacing = '0.028px';
+  shortcutsPopup.innerHTML = `
+    <p><b>Ctrl+B</b> and <i>Ctrl+I</i> to toggle bold and italic. <u>Underline too</u>.</p>
+    <p>Highlight text then open the note taker to automatically paste it.</p>
+    <p>Use Shift+Enter or type "- " at the start of a line for bullet points.</p>
+    <p>Use Shift+Backspace to toggle <s>strikethrough</s>.</p>
+  `;
+
+  // Append shortcuts icon and popup to header
+  header.appendChild(shortcutsIcon);
+  header.appendChild(shortcutsPopup);
+
+  // Show shortcuts icon on header hover
+  header.addEventListener('mouseenter', () => {
+    header.style.backgroundColor = hoverBackgroundColor;
+    storageInfo.style.display = 'block';
+    shortcutsIcon.style.display = 'block'; // Ensure this line is present
+    updateStorageInfo();
+  });
+
+  header.addEventListener('mouseleave', () => {
+    if (!isDragging) {
+      header.style.backgroundColor = 'transparent';
+      storageInfo.style.display = 'none';
+      shortcutsIcon.style.display = 'none';
+      shortcutsPopup.style.display = 'none';
+    }
+  });
+
+  // Show shortcuts popup on icon hover
+  shortcutsIcon.addEventListener('mouseenter', () => {
+    shortcutsPopup.style.display = 'block';
+  });
+
+  shortcutsIcon.addEventListener('mouseleave', () => {
+    shortcutsPopup.style.display = 'none';
+  });
 
   // Create the iframe
   iframe = document.createElement('iframe');
