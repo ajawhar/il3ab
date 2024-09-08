@@ -120,10 +120,10 @@ function createIframe() {
   shortcutsPopup.style.lineHeight = '22.4px';
   shortcutsPopup.style.letterSpacing = '0.028px';
   shortcutsPopup.innerHTML = `
-    <p><b>Ctrl+B</b> and <i>Ctrl+I</i> to toggle bold and italic. <u>Underline too</u>.</p>
+    <p>&#8963;+B for <b>bold</b>, &#8963;+I for <i>italic</i>. &#8963;+U for <u>underline too</u>.</p>
     <p>Highlight text then open the note taker to automatically paste it.</p>
-    <p>Use Shift+Enter or type "- " at the start of a line for bullet points.</p>
-    <p>Use Shift+Backspace to toggle <s>strikethrough</s>.</p>
+    <p>Use &#8679; +&#9166; for bullet points.</p>
+    <p>Use &#8679; +&#9003; to toggle <s>strikethrough</s>.</p>
   `;
 
   // Append shortcuts icon and popup to header
