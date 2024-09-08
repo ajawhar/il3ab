@@ -28,13 +28,13 @@ function createIframe() {
   header.style.cursor = 'move';
   header.style.padding = '2px 5px';
   header.style.display = 'flex';
-  header.style.justifyContent = 'space-between';
+  header.style.justifyContent = 'flex-end'; // Align items to the right
   header.style.alignItems = 'center';
+  
   // Create storage info element
   const storageInfo = document.createElement('div');
   storageInfo.style.fontSize = '10px';
   storageInfo.style.color = 'white';
-  storageInfo.style.marginLeft = 'auto'; // Push to the right
   storageInfo.style.marginRight = '5px';
   storageInfo.style.display = 'none'; // Initially hidden
 
@@ -88,10 +88,10 @@ function createIframe() {
   // Create shortcuts icon
   const shortcutsIcon = document.createElement('div');
   shortcutsIcon.innerHTML = '<img src="' + chrome.runtime.getURL('icons/keyboard_keys_16dp_E8EAED_FILL0_wght400_GRAD0_opsz20.png') + '" alt="Shortcuts">';
-  shortcutsIcon.style.marginLeft = '10px';
   shortcutsIcon.style.display = 'flex';
   shortcutsIcon.style.alignItems = 'center';
   shortcutsIcon.style.cursor = 'pointer';
+  shortcutsIcon.style.marginLeft = '5px';
 
   // Set the image size
   const iconImg = shortcutsIcon.querySelector('img');
@@ -99,6 +99,7 @@ function createIframe() {
   iconImg.style.height = '16px';
   iconImg.style.maxWidth = '16px';
   iconImg.style.maxHeight = '16px';
+  iconImg.style.verticalAlign = 'middle';
 
   // Initially hidden
   shortcutsIcon.style.display = 'none';
@@ -127,6 +128,7 @@ function createIframe() {
   `;
 
   // Append shortcuts icon and popup to header
+  header.appendChild(storageInfo);
   header.appendChild(shortcutsIcon);
   header.appendChild(shortcutsPopup);
 
