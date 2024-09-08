@@ -42,53 +42,43 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load content from storage when the iframe is loaded
   loadContent();
 
-  // Auto-save content every second
-  setInterval(() => {
-    const content = editor.innerHTML; // Get the current content of the editor
+  let lastSavedContent = '';
 
-    // Save the current content to local storage
-    chrome.storage.local.set({ iframeContent: content }, function () {
-      console.log('Content auto-saved locally');
-
-      // After saving to local storage, also save it to sync storage
-      chrome.storage.sync.set({ iframeContent: content }, function () {
-        console.log('Content auto-synced');
+  // Function to save content
+  function saveContent() {
+    const currentContent = editor.innerHTML;
+    if (currentContent !== lastSavedContent) {
+      chrome.storage.local.set({ iframeContent: currentContent }, function() {
+        console.log('Content saved locally');
+        chrome.storage.sync.set({ iframeContent: currentContent }, function() {
+          console.log('Content synced');
+          lastSavedContent = currentContent;
+        });
       });
-    });
-  }, 1000); // The save happens every 1000ms (1 second)
+    }
+  }
 
-  // Save content on typing (input event)
-  editor.addEventListener('input', () => {
-    const content = editor.innerHTML; // Get the content currently in the editor
+  // Save on input (typing)
+  editor.addEventListener('input', saveContent);
 
-    // Save the content to local storage
-    chrome.storage.local.set({ iframeContent: content }, function () {
-      console.log('Content saved locally on input');
+  // Save before unload (closing)
+  window.addEventListener('beforeunload', saveContent);
 
-      // After saving to local storage, also save it to sync storage
-      chrome.storage.sync.set({ iframeContent: content }, function () {
-        console.log('Content synced on input');
-      });
+  // Check and save if content is different from storage on load
+  document.addEventListener('DOMContentLoaded', () => {
+    chrome.storage.sync.get('iframeContent', function(result) {
+      if (result.iframeContent !== editor.innerHTML) {
+        saveContent();
+      }
     });
   });
 
-  // Listen for changes in storage and update the content dynamically if needed
-  chrome.storage.onChanged.addListener(function (changes, namespace) {
-    // If the changes come from sync storage and the iframeContent has been updated
-    if (namespace === 'sync' && changes.iframeContent) {
-      // Only update the editor content if the new value is different from the current content
-      if (changes.iframeContent.newValue !== editor.innerHTML) {
-        editor.innerHTML = changes.iframeContent.newValue; // Set the new content to the editor
-        console.log('Content updated from sync storage');
-      }
-    }
-    // If the changes come from local storage and the iframeContent has been updated
-    else if (namespace === 'local' && changes.iframeContent) {
-      // Only update the editor content if the new value is different from the current content
-      if (changes.iframeContent.newValue !== editor.innerHTML) {
-        editor.innerHTML = changes.iframeContent.newValue; // Set the new content to the editor
-        console.log('Content updated from local storage');
-      }
+  // Listen for changes in storage and update the content dynamically
+  chrome.storage.onChanged.addListener(function(changes, namespace) {
+    if (namespace === 'sync' && changes.iframeContent && changes.iframeContent.newValue !== editor.innerHTML) {
+      editor.innerHTML = changes.iframeContent.newValue;
+      lastSavedContent = changes.iframeContent.newValue;
+      console.log('Content updated from sync storage');
     }
   });
 
