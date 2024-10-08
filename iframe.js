@@ -6,13 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Function to load content from storage and set the editor's content
   function loadContent() {
-    // First, try to get the content from Chrome's sync storage
     chrome.storage.sync.get(['iframeContent', 'firstUse'], function (syncResult) {
-      // Check if there's an error or if no content is found in sync storage
       if (chrome.runtime.lastError || (!syncResult.iframeContent && syncResult.firstUse !== false)) {
-        // If no content in sync storage, try local storage
         chrome.storage.local.get(['iframeContent', 'firstUse'], function (localResult) {
-          // If content is found in local storage, set it to the editor
           if (localResult.firstUse !== false) {
             editor.innerHTML = '<div id="editor" contenteditable="true">' +
               'Welcome to &#9889; il3ab &#9889;.<br>' +
@@ -21,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 '<li><b>Ctrl+B</b> and <i>Ctrl+I</i> to toggle bold and italic. <u>Underline too</u>.</li>' +
                 '<li>Highlight text &#128397; then open the note taker so you can automatically paste it &#128203;.</li>' +
                 '<li>Use &#8679;+Enter or type "- " at the start of a line for bullet points &#9675;.</li>' +
-                '<li>Use &#8679;+Backspace to toggle <s>strikethrough</s>.</li>' +
+                '<li>Use &#8679;+Backspace to toggle  strikethrough.</li>' +
                 '<li>More to come..</li>' +
               '</ul>' +
               '<p>Start typing to begin using the extension..or maybe just delete this text first. &#9989;</p>' +
@@ -33,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         });
       } else {
-        // If content is found in sync storage, set it to the editor
         editor.innerHTML = syncResult.iframeContent || '';
       }
     });
@@ -43,28 +38,41 @@ document.addEventListener('DOMContentLoaded', () => {
   loadContent();
 
   let lastSavedContent = '';
+  let debounceTimer;
+  const saveDelay = 5000; // milliseconds
 
   // Function to save content
-  function saveContent() {
-    const currentContent = editor.innerHTML;
-    if (currentContent !== lastSavedContent) {
-      lastSavedContent = currentContent;
-      chrome.storage.local.set({ iframeContent: currentContent });
-      chrome.storage.sync.set({ iframeContent: currentContent });
+  function saveContent(content) {
+    if (content !== lastSavedContent) {
+      lastSavedContent = content;
+      chrome.storage.local.set({ iframeContent: content });
+      chrome.storage.sync.set({ iframeContent: content });
     }
   }
 
+  // Debounced save function
+  function debouncedSave() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      saveContent(editor.innerHTML);
+    }, saveDelay);
+  }
+
   // Save on input (typing)
-  editor.addEventListener('input', saveContent);
+  editor.addEventListener('input', () => {
+    debouncedSave();
+  });
 
   // Save before unload (closing)
-  window.addEventListener('beforeunload', saveContent);
+  window.addEventListener('beforeunload', () => {
+    saveContent(editor.innerHTML);
+  });
 
   // Check and save if content is different from storage on load
   document.addEventListener('DOMContentLoaded', () => {
     chrome.storage.sync.get('iframeContent', function(result) {
       if (result.iframeContent !== editor.innerHTML) {
-        saveContent();
+        saveContent(editor.innerHTML);
       }
     });
   });
@@ -133,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Add event listener for blur to save content
   editor.addEventListener('blur', () => {
     isEditing = false;
-    saveContent(); // Assuming you have a saveContent function
+    saveContent(editor.innerHTML);
   });
 
   let isEditing = false;
