@@ -141,8 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Add event listener for blur to save content
   editor.addEventListener('blur', () => {
-    isEditing = false;
-    saveContent(editor.innerHTML);
+    saveContent(editor.innerHTML); // Save content when the editor loses focus
   });
 
   let isEditing = false;
@@ -150,15 +149,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const editThreshold = 1000; // 1 second
 
   editor.addEventListener('focus', () => {
-    isEditing = true;
+    isEditing = true; // Set editing state to true when focused
   });
 
   editor.addEventListener('blur', () => {
-    isEditing = false;
+    isEditing = false; // Set editing state to false when blurred
   });
 
   editor.addEventListener('input', () => {
-    lastEditTime = Date.now();
+    lastEditTime = Date.now(); // Update last edit time on input
   });
 
   chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
