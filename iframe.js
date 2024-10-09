@@ -1,6 +1,6 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const editor = document.getElementById('editor'); // Get the contenteditable element
+const editor = document.getElementById('editor'); // Assuming this is your content-editable div
 
+document.addEventListener('DOMContentLoaded', () => {
   // Ensure the editor is focused after content is loaded
   editor.focus();
 
@@ -159,5 +159,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   editor.addEventListener('input', () => {
     lastEditTime = Date.now();
+  });
+
+  chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+    if (request.action === "saveContent") {
+      saveContent(editor.innerHTML); // Call the saveContent function with the current content
+      sendResponse({ status: "Content saved successfully" });
+    }
   });
 });

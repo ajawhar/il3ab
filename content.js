@@ -231,15 +231,17 @@ function preventDefault(e) {
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   console.log("Message received in content script:", request);
 
-  // Handle the toggleIframe action (unchanged)
+  // Handle the toggleIframe action
   if (request.action === "toggleIframe") {
     try {
       if (iframe) {
-        // Save content before removing the iframe
-        saveContentBeforeClose(function () {
-          document.body.removeChild(iframe.container);
-          iframe = null;
-          sendResponse({ status: "Iframe removed and content saved successfully" });
+        // Send a message to iframe.js to save content
+        chrome.runtime.sendMessage({ action: "saveContent" }, function(response) {
+          if (response && response.status === "Content saved successfully") {
+            document.body.removeChild(iframe.container);
+            iframe = null;
+            sendResponse({ status: "Iframe removed and content saved successfully" });
+          }
         });
       } else {
         createIframe();
@@ -287,13 +289,14 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 });
 
 // Function to explicitly save content before closing or toggling iframe
-function saveContentBeforeClose(callback) {
-  chrome.storage.sync.get('iframeContent', function (data) {
-    chrome.storage.local.set({ iframeContent: data.iframeContent }, function () {
-      console.log("Content saved before closing the iframe");
-      if (callback) callback();  // Proceed to the next step (e.g., closing the iframe)
+function saveContentBeforeClose(editor, callback) {
+    const content = editor.innerHTML; // Get the current content from the editor
+    chrome.storage.sync.set({ iframeContent: content }, function () {
+        chrome.storage.local.set({ iframeContent: content }, function () {
+            console.log("Content saved before closing the iframe");
+            if (callback) callback();  // Proceed to the next step (e.g., closing the iframe)
+        });
     });
-  });
 }
 
 // Set up a MutationObserver to watch for changes in storage
