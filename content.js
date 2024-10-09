@@ -285,6 +285,18 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     }
   }
 
+  // Handle the updateContent action
+  if (request.action === "updateContent") {
+    // Load the latest content from storage
+    chrome.storage.sync.get('iframeContent', function(result) {
+      if (result.iframeContent) {
+        // Assuming you have a reference to the editor
+        const editor = document.getElementById('editor');
+        editor.innerHTML = result.iframeContent; // Update the editor with the latest content
+      }
+    });
+  }
+
   return true;  // Indicates that we will send a response asynchronously
 });
 
@@ -305,3 +317,10 @@ observer.observe(document.body, { subtree: true, childList: true, characterData:
 
 // Also update when the window gets focus
 window.addEventListener('focus', updateStorageInfo);
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+        // Save content when the tab is hidden
+        saveContent(editor.innerHTML);
+    }
+});
