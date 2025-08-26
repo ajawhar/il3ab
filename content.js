@@ -38,8 +38,8 @@ function createIframe() {
   storageInfo.style.marginRight = '5px';
   storageInfo.style.display = 'none'; // Initially hidden
 
-  // Function to update storage info
-  function updateStorageInfo() {
+  // Function to update storage info display
+  function updateStorageInfoDisplay() {
     chrome.storage.local.getBytesInUse(null, (bytesInUse) => {
       const totalBytes = chrome.storage.local.QUOTA_BYTES;
       const usedPercentage = ((bytesInUse / totalBytes) * 100).toFixed(2);
@@ -56,7 +56,7 @@ function createIframe() {
   header.addEventListener('mouseenter', () => {
     header.style.backgroundColor = hoverBackgroundColor; // Darker on hover
     storageInfo.style.display = 'block';
-    updateStorageInfo();
+    updateStorageInfoDisplay();
   });
 
   header.addEventListener('mouseleave', () => {
@@ -65,25 +65,6 @@ function createIframe() {
       storageInfo.style.display = 'none';
     }
   });
-
-  // Update header color and show storage info when dragging starts and ends
-  const originalStartDragging = startDragging;
-  startDragging = (e) => {
-    originalStartDragging(e);
-    header.style.backgroundColor = hoverBackgroundColor; // Use hover background when dragging
-    storageInfo.style.display = 'block';
-    shortcutsIcon.style.display = 'block'; // Ensure this line is present
-    updateStorageInfo();
-  };
-
-  const originalStopDragging = stopDragging;
-  stopDragging = () => {
-    originalStopDragging();
-    header.style.backgroundColor = 'transparent';
-    storageInfo.style.display = 'none';
-    shortcutsIcon.style.display = 'none';
-    shortcutsPopup.style.display = 'none';
-  };
 
   // Create shortcuts icon
   const shortcutsIcon = document.createElement('div');
@@ -136,8 +117,8 @@ function createIframe() {
   header.addEventListener('mouseenter', () => {
     header.style.backgroundColor = hoverBackgroundColor;
     storageInfo.style.display = 'block';
-    shortcutsIcon.style.display = 'block'; // Ensure this line is present
-    updateStorageInfo();
+    shortcutsIcon.style.display = 'block';
+    updateStorageInfoDisplay();
   });
 
   header.addEventListener('mouseleave', () => {
@@ -166,7 +147,6 @@ function createIframe() {
   iframe.style.border = 'none';
   iframe.style.backgroundColor = 'transparent';
 
-
   // Append elements
   container.appendChild(header);
   container.appendChild(iframe);
@@ -185,9 +165,32 @@ function createIframe() {
 
   // Store the container reference
   iframe.container = container;
+  
+  // Load content from storage when iframe is created
+  iframe.addEventListener('load', () => {
+    console.log('Iframe loaded, checking for content in storage...');
+    // Load the latest content from storage
+    chrome.storage.local.get(['iframeContent'], function(result) {
+      if (result.iframeContent) {
+        console.log('Found content in storage, loading into iframe...');
+        // Handle new content structure with timestamp
+        const content = typeof result.iframeContent === 'object' && result.iframeContent.content 
+          ? result.iframeContent.content 
+          : result.iframeContent;
+        
+        // Send message to iframe to load content
+        if (iframe && iframe.contentWindow) {
+          iframe.contentWindow.postMessage({
+            action: 'loadContent',
+            content: content
+          }, '*');
+        }
+      } else {
+        console.log('No content found in storage');
+      }
+    });
+  });
 }
-
-let lastUsedPercentage = -1; // Initialize with an impossible value
 
 function startDragging(e) {
   isDragging = true;
@@ -231,26 +234,49 @@ function preventDefault(e) {
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   console.log("Message received in content script:", request);
 
+  // Handle ping messages for connection testing
+  if (request.action === "ping") {
+    sendResponse({ status: "pong" });
+    return false; // Don't keep message channel open for simple responses
+  }
+
   // Handle the toggleIframe action
   if (request.action === "toggleIframe") {
     try {
-      if (iframe) {
-        // Send a message to iframe.js to save content
-        chrome.runtime.sendMessage({ action: "saveContent" }, function(response) {
-          if (response && response.status === "Content saved successfully") {
-            document.body.removeChild(iframe.container);
-            iframe = null;
-            sendResponse({ status: "Iframe removed and content saved successfully" });
-          }
-        });
+      console.log("Toggle iframe called. Current iframe state:", iframe ? "exists" : "null");
+      
+      if (iframe && iframe.container) {
+        console.log("Removing existing iframe...");
+        
+        // Save content directly to iframe before closing
+        if (iframe.contentWindow) {
+          iframe.contentWindow.postMessage({ action: 'saveContent' }, '*');
+        }
+        
+        // Remove iframe immediately
+        if (document.body.contains(iframe.container)) {
+          document.body.removeChild(iframe.container);
+          console.log("Iframe container removed from DOM");
+        } else {
+          console.log("Iframe container not found in DOM");
+        }
+        
+        iframe = null;
+        console.log("Iframe reference set to null");
+        sendResponse({ status: "Iframe removed and content saved successfully" });
       } else {
+        console.log("Creating new iframe...");
         createIframe();
+        console.log("Iframe created successfully");
         sendResponse({ status: "Iframe created successfully" });
       }
     } catch (error) {
       console.error("Error toggling iframe:", error);
+      // Reset iframe state on error
+      iframe = null;
       sendResponse({ status: "Error", error: error.toString() });
     }
+    return true; // Keep message channel open for async response
   }
 
   // Handle the checkSelection action
@@ -283,44 +309,54 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       console.log("No text selected.");
       sendResponse({ status: "error", error: "No text selected" });
     }
+    return true; // Keep message channel open for async response
   }
 
-  // Handle the updateContent action
+  // Handle the updateContent action - pass through to iframe
   if (request.action === "updateContent") {
-    // Load the latest content from storage
-    chrome.storage.sync.get('iframeContent', function(result) {
-      if (result.iframeContent) {
-        // Assuming you have a reference to the editor
-        const editor = document.getElementById('editor');
-        editor.innerHTML = result.iframeContent; // Update the editor with the latest content
-      }
-    });
+    console.log("Content script received updateContent:", request);
+    // Pass the message to the iframe
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage({
+        action: 'updateContent',
+        content: request.content,
+        sessionId: request.sessionId
+      }, '*');
+    }
+    sendResponse({ status: "Content update passed to iframe" });
+    return false; // Don't keep message channel open for this
   }
 
-  return true;  // Indicates that we will send a response asynchronously
+  // Default response for unknown actions
+  sendResponse({ status: "Unknown action" });
+  return false;
 });
 
 // Function to explicitly save content before closing or toggling iframe
 function saveContentBeforeClose(editor, callback) {
     const content = editor.innerHTML; // Get the current content from the editor
-    chrome.storage.sync.set({ iframeContent: content }, function () {
-        chrome.storage.local.set({ iframeContent: content }, function () {
+    const saveData = {
+      content: content,
+      timestamp: Date.now(),
+      tabId: chrome.tabs.TAB_ID_NONE,
+      isEditing: false
+    };
+    
+    chrome.storage.sync.set({ iframeContent: saveData }, function () {
+        chrome.storage.local.set({ iframeContent: saveData }, function () {
             console.log("Content saved before closing the iframe");
             if (callback) callback();  // Proceed to the next step (e.g., closing the iframe)
         });
     });
 }
 
-// Set up a MutationObserver to watch for changes in storage
-const observer = new MutationObserver(updateStorageInfo);
-observer.observe(document.body, { subtree: true, childList: true, characterData: true });
-
-// Also update when the window gets focus
-window.addEventListener('focus', updateStorageInfo);
-
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
         // Save content when the tab is hidden
-        saveContent(editor.innerHTML);
+        if (iframe && iframe.contentWindow) {
+          iframe.contentWindow.postMessage({
+            action: 'saveContent'
+          }, '*');
+        }
     }
 });

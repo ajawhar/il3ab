@@ -2,29 +2,117 @@
 <html>
 <head>
   <style>
-    body {
+    /* CSS Reset to prevent inheritance from parent page */
+    * {
       margin: 0;
       padding: 0;
-    }
-    #editor {
-      border: none;
       box-sizing: border-box;
-      color: white;
-      font-family: Inter, 'Helvetica Neue', Arial, sans-serif;
-      font-size: 14px;
-      width: 100%;
-      height: 100%;
-      letter-spacing: 0.028px;
-      line-height: 22.4px;
-      overflow-wrap: break-word;
-      tab-size: 4;
-      text-size-adjust: 100%;
-      white-space: pre-wrap;
-      outline: none;
-      padding: 5px 10px;
     }
+    
+    /* Force all inherited properties to be reset */
+    html, body {
+      margin: 0 !important;
+      padding: 0 !important;
+      font-family: Inter, 'Helvetica Neue', Arial, sans-serif !important;
+      font-size: 14px !important;
+      line-height: 22.4px !important;
+      letter-spacing: 0.028px !important;
+      color: white !important;
+      background-color: transparent !important;
+      /* Override any CSS custom properties from parent page */
+      --YLNNHc: white !important;
+      --Xqboce: white !important;
+      --EpFNW: #1f1f1f !important;
+      --todMNcl: #202124 !important;
+    }
+    
+    /* Ensure editor has proper styling */
+    #editor {
+      border: none !important;
+      box-sizing: border-box !important;
+      color: white !important;
+      font-family: Inter, 'Helvetica Neue', Arial, sans-serif !important;
+      font-size: 14px !important;
+      width: 100% !important;
+      height: 100% !important;
+      letter-spacing: 0.028px !important;
+      line-height: 22.4px !important;
+      overflow-wrap: break-word !important;
+      tab-size: 4 !important;
+      text-size-adjust: 100% !important;
+      white-space: pre-wrap !important;
+      outline: none !important;
+      padding: 5px 10px !important;
+      background-color: transparent !important;
+      /* Force override any inherited colors */
+      --color: white !important;
+      --background-color: transparent !important;
+    }
+    
     #editor[contenteditable="true"] {
-      min-height: 100%;
+      min-height: 100% !important;
+    }
+    
+    /* Override any inherited styles for text elements */
+    #editor * {
+      color: inherit !important;
+      font-family: inherit !important;
+      font-size: inherit !important;
+      line-height: inherit !important;
+    }
+    
+    /* Ensure links are visible */
+    #editor a {
+      color: #4CAF50 !important;
+      text-decoration: underline !important;
+    }
+    
+    /* Ensure bold text is visible */
+    #editor b, #editor strong {
+      font-weight: bold !important;
+      color: white !important;
+    }
+    
+    /* Ensure italic text is visible */
+    #editor i, #editor em {
+      font-style: italic !important;
+      color: white !important;
+    }
+    
+    /* Ensure underlined text is visible */
+    #editor u {
+      text-decoration: underline !important;
+      color: white !important;
+    }
+    
+    /* Ensure strikethrough text is visible */
+    #editor s, #editor strike {
+      text-decoration: line-through !important;
+      color: white !important;
+    }
+    
+    /* Ensure lists are properly styled */
+    #editor ul, #editor ol {
+      padding-left: 15px !important;
+      margin: 0 !important;
+      color: white !important;
+    }
+    
+    #editor li {
+      padding-left: 5px !important;
+      margin: 0 !important;
+      color: white !important;
+    }
+    
+    /* Override any focus styles */
+    #editor:focus {
+      outline: none !important;
+      color: white !important;
+    }
+    
+    /* Ensure placeholder text is visible if any */
+    #editor::placeholder {
+      color: rgba(255, 255, 255, 0.7) !important;
     }
   </style>
 </head>
