@@ -4,6 +4,13 @@ let iframe;
 let isDragging = false;
 let startX, startY;
 
+// Store event listener references for cleanup
+let dragListeners = {
+  mousemove: null,
+  mouseup: null,
+  selectstart: null
+};
+
 // Function to create and append the iframe
 function createIframe() {
   const headerHeight = '20px';
@@ -158,10 +165,16 @@ function createIframe() {
     container.style.top = (result.iframeY || '20') + 'px';
   });
 
-  // Add event listeners for dragging
+  // Add event listeners for dragging with proper cleanup
   header.addEventListener('mousedown', startDragging);
-  document.addEventListener('mousemove', drag);
-  document.addEventListener('mouseup', stopDragging);
+  
+  // Store drag listeners for cleanup
+  dragListeners.mousemove = drag;
+  dragListeners.mouseup = stopDragging;
+  dragListeners.selectstart = preventDefault;
+  
+  document.addEventListener('mousemove', dragListeners.mousemove);
+  document.addEventListener('mouseup', dragListeners.mouseup);
 
   // Store the container reference
   iframe.container = container;
@@ -196,7 +209,7 @@ function startDragging(e) {
   isDragging = true;
   startX = e.clientX - iframe.container.offsetLeft;
   startY = e.clientY - iframe.container.offsetTop;
-  document.addEventListener('selectstart', preventDefault);
+  document.addEventListener('selectstart', dragListeners.selectstart);
 }
 
 function drag(e) {
@@ -212,7 +225,7 @@ function drag(e) {
 function stopDragging() {
   if (isDragging) {
     isDragging = false;
-    document.removeEventListener('selectstart', preventDefault);
+    document.removeEventListener('selectstart', dragListeners.selectstart);
     // Save the new position
     chrome.storage.local.set({
       iframeX: parseInt(iframe.container.style.left),
@@ -229,6 +242,34 @@ function stopDragging() {
 
 function preventDefault(e) {
   e.preventDefault();
+}
+
+// 🛑 CRITICAL: Cleanup function to prevent memory leaks
+function cleanupIframeListeners() {
+  console.log('Cleaning up iframe event listeners...');
+  
+  // Remove all drag-related event listeners
+  if (dragListeners.mousemove) {
+    document.removeEventListener('mousemove', dragListeners.mousemove);
+    dragListeners.mousemove = null;
+  }
+  
+  if (dragListeners.mouseup) {
+    document.removeEventListener('mouseup', dragListeners.mouseup);
+    dragListeners.mouseup = null;
+  }
+  
+  if (dragListeners.selectstart) {
+    document.removeEventListener('selectstart', dragListeners.selectstart);
+    dragListeners.selectstart = null;
+  }
+  
+  // Reset drag state
+  isDragging = false;
+  startX = null;
+  startY = null;
+  
+  console.log('Iframe event listeners cleaned up - memory leak prevented');
 }
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
@@ -252,6 +293,9 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         if (iframe.contentWindow) {
           iframe.contentWindow.postMessage({ action: 'saveContent' }, '*');
         }
+        
+        // 🛑 CRITICAL: Clean up all event listeners to prevent memory leaks
+        cleanupIframeListeners();
         
         // Remove iframe immediately
         if (document.body.contains(iframe.container)) {

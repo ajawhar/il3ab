@@ -10,6 +10,11 @@ let debounceTimer;
 const saveDelay = 50; // Reduced from 100ms to 50ms for near-instant sync
 let currentTabId = Date.now() + Math.random(); // Unique tab ID
 
+// Store listener references for cleanup
+let storageListener = null;
+let runtimeMessageListener = null;
+let windowMessageListener = null;
+
 document.addEventListener('DOMContentLoaded', () => {
   // Ensure the editor is focused after content is loaded
   editor.focus();
@@ -131,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Listen for updates from background script (PRIMARY SYNC METHOD)
-  chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+  runtimeMessageListener = function(request, sender, sendResponse) {
     if (request.action === 'updateContent') {
       console.log('Received update from background script:', request);
       if (request.sessionId !== currentTabId && !isCurrentlyEditing) {
@@ -154,10 +159,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     return false; // Don't keep message channel open
-  });
+  };
+  
+  chrome.runtime.onMessage.addListener(runtimeMessageListener);
 
   // Listen for changes in storage (BACKUP SYNC METHOD)
-  chrome.storage.onChanged.addListener(function(changes, namespace) {
+  storageListener = function(changes, namespace) {
     if (namespace === 'sync' && changes.iframeContent) {
       const newData = changes.iframeContent.newValue;
       const currentContent = editor.innerHTML;
@@ -172,10 +179,12 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Content updated from sync storage');
       }
     }
-  });
+  };
+  
+  chrome.storage.onChanged.addListener(storageListener);
 
   // Listen for messages from content script
-  window.addEventListener('message', function(event) {
+  windowMessageListener = function(event) {
     if (event.data && event.data.action) {
       switch(event.data.action) {
         case 'updateContent':
@@ -201,7 +210,9 @@ document.addEventListener('DOMContentLoaded', () => {
           break;
       }
     }
-  });
+  };
+  
+  window.addEventListener('message', windowMessageListener);
 
   // Intelligent content merging function
   function mergeContent(oldContent, newContent) {
@@ -332,5 +343,44 @@ document.addEventListener('DOMContentLoaded', () => {
   // Enhanced focus handling
   editor.addEventListener('focus', () => {
     isCurrentlyEditing = true;
+  });
+  
+  // 🛑 CRITICAL: Cleanup function to prevent memory leaks
+  function cleanupIframeListeners() {
+    console.log('Cleaning up iframe listeners...');
+    
+    // Clear all timers
+    if (editingTimeout) {
+      clearTimeout(editingTimeout);
+      editingTimeout = null;
+    }
+    
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+      debounceTimer = null;
+    }
+    
+    // Remove all listeners
+    if (storageListener) {
+      chrome.storage.onChanged.removeListener(storageListener);
+      storageListener = null;
+    }
+    
+    if (runtimeMessageListener) {
+      chrome.runtime.onMessage.removeListener(runtimeMessageListener);
+      runtimeMessageListener = null;
+    }
+    
+    if (windowMessageListener) {
+      window.removeEventListener('message', windowMessageListener);
+      windowMessageListener = null;
+    }
+    
+    console.log('Iframe listeners cleaned up - memory leak prevented');
+  }
+  
+  // Cleanup on page unload
+  window.addEventListener('beforeunload', () => {
+    cleanupIframeListeners();
   });
 });

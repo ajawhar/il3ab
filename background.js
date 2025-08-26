@@ -5,28 +5,49 @@ chrome.runtime.onInstalled.addListener(() => {
 // Central hub for real-time sync across all tabs/windows
 let lastChecked = 0;
 let isProcessingShortcut = false; // Prevent multiple shortcut triggers
+let pollInterval = null; // Store interval reference for cleanup
 
-// Poll storage for updates every 50ms (reduced from 100ms)
-setInterval(() => {
-  chrome.storage.local.get(['lastUpdate', 'content', 'sessionId'], (result) => {
-    if (result.lastUpdate && result.lastUpdate > lastChecked) {
-      console.log('Broadcasting update to all tabs');
-      // Broadcast to ALL tabs across ALL windows
-      chrome.tabs.query({}, (tabs) => {
-        tabs.forEach(tab => {
-          chrome.tabs.sendMessage(tab.id, {
-            action: 'updateContent',
-            content: result.content,
-            sessionId: result.sessionId
-          }).catch(() => {
-            // Ignore errors for tabs that can't receive messages
+// Initialize polling with proper cleanup
+function startPolling() {
+  // Clear any existing interval first
+  if (pollInterval) {
+    clearInterval(pollInterval);
+  }
+  
+  // Poll storage for updates every 50ms (reduced from 100ms)
+  pollInterval = setInterval(() => {
+    chrome.storage.local.get(['lastUpdate', 'content', 'sessionId'], (result) => {
+      if (result.lastUpdate && result.lastUpdate > lastChecked) {
+        console.log('Broadcasting update to all tabs');
+        // Broadcast to ALL tabs across ALL windows
+        chrome.tabs.query({}, (tabs) => {
+          tabs.forEach(tab => {
+            chrome.tabs.sendMessage(tab.id, {
+              action: 'updateContent',
+              content: result.content,
+              sessionId: result.sessionId
+            }).catch(() => {
+              // Ignore errors for tabs that can't receive messages
+            });
           });
         });
-      });
-      lastChecked = result.lastUpdate;
-    }
-  });
-}, 50); // Reduced from 100ms to 50ms
+        lastChecked = result.lastUpdate;
+      }
+    });
+  }, 50); // Reduced from 100ms to 50ms
+}
+
+// Cleanup function to stop polling
+function stopPolling() {
+  if (pollInterval) {
+    clearInterval(pollInterval);
+    pollInterval = null;
+    console.log('Polling stopped - memory leak prevented');
+  }
+}
+
+// Start polling when extension loads
+startPolling();
 
 function sendMessageToActiveTab(retries = 3) {
   // Prevent multiple simultaneous shortcut triggers
@@ -108,9 +129,14 @@ chrome.commands.onCommand.addListener(function (command) {
   }
 });
 
-// Enhanced data saving with better error handling
+// Enhanced data saving with better error handling and cleanup
 chrome.runtime.onSuspend.addListener(() => {
-  console.log("Service worker is being suspended, saving data...");
+  console.log("Service worker is being suspended, cleaning up...");
+  
+  // 🛑 CRITICAL: Clean up all listeners to prevent memory leaks
+  stopPolling();
+  cleanupStorageListener();
+  cleanupRuntimeMessageListener();
   
   // Save to both local and sync storage for redundancy
   chrome.storage.sync.get('iframeContent', function (syncData) {
@@ -133,6 +159,17 @@ chrome.runtime.onSuspend.addListener(() => {
   });
 });
 
+// Also cleanup when extension is unloaded
+chrome.runtime.onStartup.addListener(() => {
+  console.log("Extension starting up, initializing clean state...");
+  // Reset all references to ensure clean state
+  pollInterval = null;
+  storageListener = null;
+  runtimeMessageListener = null;
+  isProcessingShortcut = false;
+  lastChecked = 0;
+});
+
 let lastActiveTabId = null;
 let iframePosition = { x: 20, y: 20 };
 
@@ -140,45 +177,69 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
   lastActiveTabId = activeInfo.tabId;
 });
 
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  if (request.action === "updatePosition") {
-    iframePosition = { x: request.x, y: request.y };
-    // Update the position for the current tab
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      if (tabs[0]) {
-        chrome.storage.local.set({
-          [tabs[0].id]: iframePosition
-        });
-      }
-    });
+// Store runtime message listener reference for cleanup
+let runtimeMessageListener = null;
+
+function setupRuntimeMessageListener() {
+  // Remove existing listener if any
+  if (runtimeMessageListener) {
+    chrome.runtime.onMessage.removeListener(runtimeMessageListener);
   }
   
-  // Handle save content requests
-  if (request.action === "saveContent") {
-    // This will be handled by the iframe directly
-    sendResponse({ status: "Save request received" });
-  }
-
-  // Handle broadcast update requests
-  if (request.action === "broadcastUpdate") {
-    console.log('Broadcasting update from tab:', sender.tab.id);
-    // Broadcast to all other tabs immediately
-    chrome.tabs.query({}, (tabs) => {
-      tabs.forEach(tab => {
-        if (tab.id !== sender.tab.id) {
-          chrome.tabs.sendMessage(tab.id, {
-            action: 'updateContent',
-            content: request.content,
-            sessionId: request.sessionId
-          }).catch(() => {
-            // Ignore errors for tabs that can't receive messages
+  runtimeMessageListener = function(request, sender, sendResponse) {
+    if (request.action === "updatePosition") {
+      iframePosition = { x: request.x, y: request.y };
+      // Update the position for the current tab
+      chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        if (tabs[0]) {
+          chrome.storage.local.set({
+            [tabs[0].id]: iframePosition
           });
         }
       });
-    });
-    sendResponse({ status: "Update broadcasted" });
+    }
+    
+    // Handle save content requests
+    if (request.action === "saveContent") {
+      // This will be handled by the iframe directly
+      sendResponse({ status: "Save request received" });
+    }
+
+    // Handle broadcast update requests
+    if (request.action === "broadcastUpdate") {
+      console.log('Broadcasting update from tab:', sender.tab.id);
+      // Broadcast to all other tabs immediately
+      chrome.tabs.query({}, (tabs) => {
+        tabs.forEach(tab => {
+          if (tab.id !== sender.tab.id) {
+            chrome.tabs.sendMessage(tab.id, {
+              action: 'updateContent',
+              content: request.content,
+              sessionId: request.sessionId
+            }).catch(() => {
+              // Ignore errors for tabs that can't receive messages
+            });
+          }
+        });
+      });
+      sendResponse({ status: "Update broadcasted" });
+    }
+  };
+  
+  chrome.runtime.onMessage.addListener(runtimeMessageListener);
+}
+
+// Cleanup function for runtime message listener
+function cleanupRuntimeMessageListener() {
+  if (runtimeMessageListener) {
+    chrome.runtime.onMessage.removeListener(runtimeMessageListener);
+    runtimeMessageListener = null;
+    console.log('Runtime message listener removed - memory leak prevented');
   }
-});
+}
+
+// Setup runtime message listener when extension loads
+setupRuntimeMessageListener();
 
 chrome.tabs.onCreated.addListener(function(tab) {
   if (lastActiveTabId) {
@@ -202,13 +263,37 @@ chrome.tabs.onActivated.addListener(function(activeInfo) {
     });
 });
 
+// Store storage listener reference for cleanup
+let storageListener = null;
+
 // Monitor storage changes for sync status
-chrome.storage.onChanged.addListener(function(changes, namespace) {
-  if (namespace === 'sync' && changes.iframeContent) {
-    console.log('Content synced across tabs/windows');
+function setupStorageListener() {
+  // Remove existing listener if any
+  if (storageListener) {
+    chrome.storage.onChanged.removeListener(storageListener);
   }
   
-  if (namespace === 'local' && changes.iframeContent) {
-    console.log('Content saved locally');
+  storageListener = function(changes, namespace) {
+    if (namespace === 'sync' && changes.iframeContent) {
+      console.log('Content synced across tabs/windows');
+    }
+    
+    if (namespace === 'local' && changes.iframeContent) {
+      console.log('Content saved locally');
+    }
+  };
+  
+  chrome.storage.onChanged.addListener(storageListener);
+}
+
+// Cleanup function for storage listener
+function cleanupStorageListener() {
+  if (storageListener) {
+    chrome.storage.onChanged.removeListener(storageListener);
+    storageListener = null;
+    console.log('Storage listener removed - memory leak prevented');
   }
-});
+}
+
+// Setup storage listener when extension loads
+setupStorageListener();
