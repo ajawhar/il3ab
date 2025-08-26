@@ -345,7 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
     isCurrentlyEditing = true;
   });
   
-  // 🛑 CRITICAL: Cleanup function to prevent memory leaks
+  // Cleanup function to prevent memory leaks
   function cleanupIframeListeners() {
     console.log('Cleaning up iframe listeners...');
     

@@ -14,36 +14,53 @@ let dragListeners = {
 // Function to create and append the iframe
 function createIframe() {
   const headerHeight = '20px';
-  const backgroundColor = 'rgb(30 30 30 / 95%)'; // Semi-transparent background
-  const hoverBackgroundColor = 'rgb(15 15 15 / 100%)'; // Darker on hover and drag
+  const backgroundColor = 'rgb(30, 30, 30)'; // Solid dark background
+  const hoverBackgroundColor = 'rgb(15, 15, 15)'; // Darker on hover
 
-  // Create a container for the iframe
+  // Create container for the iframe
   const container = document.createElement('div');
-  container.style.position = 'fixed';
-  container.style.width = '500px';
-  container.style.height = '300px';
-  container.style.border = 'none';
-  container.style.zIndex = '9999';
-  container.style.backgroundColor = backgroundColor;
-  container.style.borderRadius = '10px';
-  container.style.overflow = 'hidden';
-  container.style.boxShadow = '0 6px 10px rgba(0, 0, 0, 0.2)';
+  container.style.cssText = `
+    position: fixed !important;
+    width: 500px !important;
+    height: 300px !important;
+    border: none !important;
+    z-index: 9999 !important;
+    background-color: ${backgroundColor} !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2) !important;
+    font-family: Inter, 'Helvetica Neue', Arial, sans-serif !important;
+    font-size: 14px !important;
+    line-height: 22.4px !important;
+    letter-spacing: 0.028px !important;
+    color: white !important;
+    background: ${backgroundColor} !important;
+  `;
   
-  // Create a draggable header
+  // Create draggable header
   const header = document.createElement('div');
-  header.style.height = headerHeight;
-  header.style.cursor = 'move';
-  header.style.padding = '2px 5px';
-  header.style.display = 'flex';
-  header.style.justifyContent = 'flex-end'; // Align items to the right
-  header.style.alignItems = 'center';
+  header.style.cssText = `
+    height: ${headerHeight} !important;
+    cursor: move !important;
+    padding: 2px 5px !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    background-color: transparent !important;
+    font-family: Inter, 'Helvetica Neue', Arial, sans-serif !important;
+    font-size: 10px !important;
+    color: white !important;
+  `;
   
   // Create storage info element
   const storageInfo = document.createElement('div');
-  storageInfo.style.fontSize = '10px';
-  storageInfo.style.color = 'white';
-  storageInfo.style.marginRight = '5px';
-  storageInfo.style.display = 'none'; // Initially hidden
+  storageInfo.style.cssText = `
+    font-size: 10px !important;
+    color: white !important;
+    margin-right: 5px !important;
+    display: none !important;
+    font-family: Inter, 'Helvetica Neue', Arial, sans-serif !important;
+  `;
 
   // Function to update storage info display
   function updateStorageInfoDisplay() {
@@ -61,7 +78,7 @@ function createIframe() {
 
   // Show storage info on hover and drag
   header.addEventListener('mouseenter', () => {
-    header.style.backgroundColor = hoverBackgroundColor; // Darker on hover
+    header.style.backgroundColor = hoverBackgroundColor;
     storageInfo.style.display = 'block';
     updateStorageInfoDisplay();
   });
@@ -76,38 +93,45 @@ function createIframe() {
   // Create shortcuts icon
   const shortcutsIcon = document.createElement('div');
   shortcutsIcon.innerHTML = '<img src="' + chrome.runtime.getURL('icons/keyboard_keys_16dp_E8EAED_FILL0_wght400_GRAD0_opsz20.png') + '" alt="Shortcuts">';
-  shortcutsIcon.style.display = 'flex';
-  shortcutsIcon.style.alignItems = 'center';
-  shortcutsIcon.style.cursor = 'pointer';
-  shortcutsIcon.style.marginLeft = '5px';
+  shortcutsIcon.style.cssText = `
+    display: flex !important;
+    align-items: center !important;
+    cursor: pointer !important;
+    margin-left: 5px !important;
+    font-family: Inter, 'Helvetica Neue', Arial, sans-serif !important;
+  `;
 
   // Set the image size
   const iconImg = shortcutsIcon.querySelector('img');
-  iconImg.style.width = '16px';
-  iconImg.style.height = '16px';
-  iconImg.style.maxWidth = '16px';
-  iconImg.style.maxHeight = '16px';
-  iconImg.style.verticalAlign = 'middle';
+  iconImg.style.cssText = `
+    width: 16px !important;
+    height: 16px !important;
+    max-width: 16px !important;
+    max-height: 16px !important;
+    vertical-align: middle !important;
+  `;
 
   // Initially hidden
   shortcutsIcon.style.display = 'none';
 
   // Create shortcuts popup
   const shortcutsPopup = document.createElement('div');
-  shortcutsPopup.style.position = 'absolute';
-  shortcutsPopup.style.top = '25px';
-  shortcutsPopup.style.right = '5px';
-  shortcutsPopup.style.backgroundColor = '#333';
-  shortcutsPopup.style.padding = '10px';
-  shortcutsPopup.style.borderRadius = '5px';
-  shortcutsPopup.style.zIndex = '10000';
-  shortcutsPopup.style.maxWidth = '300px';
-  shortcutsPopup.style.display = 'none';
-  shortcutsPopup.style.color = 'white';
-  shortcutsPopup.style.fontFamily = "Inter, 'Helvetica Neue', Arial, sans-serif";
-  shortcutsPopup.style.fontSize = '14px';
-  shortcutsPopup.style.lineHeight = '22.4px';
-  shortcutsPopup.style.letterSpacing = '0.028px';
+  shortcutsPopup.style.cssText = `
+    position: absolute !important;
+    top: 25px !important;
+    right: 5px !important;
+    background-color: #333 !important;
+    padding: 10px !important;
+    border-radius: 5px !important;
+    z-index: 10000 !important;
+    max-width: 300px !important;
+    display: none !important;
+    color: white !important;
+    font-family: Inter, 'Helvetica Neue', Arial, sans-serif !important;
+    font-size: 14px !important;
+    line-height: 22.4px !important;
+    letter-spacing: 0.028px !important;
+  `;
   shortcutsPopup.innerHTML = `
     <p>&#8963;+B for <b>bold</b>, &#8963;+I for <i>italic</i>. &#8963;+U for <u>underline too</u>.</p>
     <p>Highlight text then open the note taker to automatically paste it.</p>
@@ -149,10 +173,12 @@ function createIframe() {
   // Create the iframe
   iframe = document.createElement('iframe');
   iframe.src = chrome.runtime.getURL('iframe.html');
-  iframe.style.width = '100%';
-  iframe.style.height = `calc(100% - ${headerHeight})`;
-  iframe.style.border = 'none';
-  iframe.style.backgroundColor = 'transparent';
+  iframe.style.cssText = `
+    width: 100% !important;
+    height: calc(100% - ${headerHeight}) !important;
+    border: none !important;
+    background-color: transparent !important;
+  `;
 
   // Append elements
   container.appendChild(header);
