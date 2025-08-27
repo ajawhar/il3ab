@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 '<li><b>Ctrl+B</b> and <i>Ctrl+I</i> to toggle bold and italic. <u>Underline too</u>.</li>' +
                 '<li>Highlight text &#128397; then open the note taker so you can automatically paste it &#128203;.</li>' +
                 '<li>Use &#8679;+Enter or type "- " at the start of a line for bullet points &#9675;.</li>' +
-                '<li>Use &#8679;+Backspace to toggle  strikethrough.</li>' +
+                '<li>Use &#8984;+&#8679;+X to toggle strikethrough.</li>' +
                 '<li>Hover over the navigation bar icon <img src="' + chrome.runtime.getURL('icons/keyboard_keys_16dp_E8EAED_FILL0_wght400_GRAD0_opsz20.png') + '" alt="Shortcuts Icon" style="width: 16px; height: 16px;"> to view these shortcuts.</li>' +
                 '<li>More to come..</li>' +
               '</ul>' +
@@ -325,7 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Function to handle strikethrough
   function handleStrikethrough(e) {
-    if (e.key === 'Backspace' && e.shiftKey) {
+    if (e.key === 'x' && e.shiftKey && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       document.execCommand('strikeThrough', false, null);
     }
